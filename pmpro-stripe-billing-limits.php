@@ -1,17 +1,16 @@
 <?php
 /*
 Plugin Name: PMPro Stipe Billing Limits
-Version: 0.1
 Plugin URI: http://www.paidmembershipspro.com/add-ons/pmpro-stripe-billing-limits/
 Description: Allow billing limits with Stripe, where the Stripe subscription is cancelled, but the PMPro membership is not after X payments.
-Version: .1
+Version: .2
 Author: strangerstudios
 Author URI: http://www.strangerstudios.com
 */
 /*
 	The Plan
 	* Hook into pmpro_after_checkout
-	* If $level->billing_limits > 0, save user meta with level id, Stripe sub id, billing limits #
+	* If $level->billing_limit > 0 and gateway == stripe, save user meta with level id, Stripe sub id, billing limits #
 	
 	* Hook into new recurring order created.
 	* Check for user meta RE billing limits.
@@ -24,14 +23,16 @@ Author URI: http://www.strangerstudios.com
 function pmprosbl_pmpro_after_checkout($user_id)
 {
 	//what level?
-	global $pmpro_level;
+	global $pmpro_level, $gateway;
 	
-	//billing limit?
-	if($pmpro_level->billing_limit > 0)
+	//get order
+	$order = new MemberOrder();
+	$order->getLastMemberOrder($user_id);
+	
+	//billing limit? gateway stripe?
+	if($pmpro_level->billing_limit > 0 && $order->gateway == "stripe")
 	{
-		//get customer id
-		$order = new MemberOrder();
-		$order->getLastMemberOrder();		
+		//customer id is on order
 		$customer_id = $order->subscription_transaction_id;
 		
 		//get sub id via Stripe API
@@ -108,7 +109,7 @@ function pmprosbl_pmpro_stripe_subscription_deleted($user_id)
 	if(!empty($pmpro_stripe_billing_limit) && !empty($pmpro_stripe_billing_limit['cancelled']))
 	{	
 		global $logstr;
-		$logstr .= "Subscription user ID #" . $user->ID . " has hit its billing limit. Subscription deleted. Event ID #" . $event->id . ".";
+		$logstr .= "Subscription user ID #" . $user_id . " has hit its billing limit. Subscription deleted.";
 		pmpro_stripeWebhookExit();
 	}
 }
