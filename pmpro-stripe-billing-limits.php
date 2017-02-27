@@ -3,7 +3,7 @@
 Plugin Name: PMPro Stipe Billing Limits
 Plugin URI: http://www.paidmembershipspro.com/add-ons/pmpro-stripe-billing-limits/
 Description: Allow billing limits with Stripe, where the Stripe subscription is cancelled, but the PMPro membership is not after X payments.
-Version: .2
+Version: .3
 Author: strangerstudios
 Author URI: http://www.strangerstudios.com
 */
@@ -33,8 +33,12 @@ function pmprosbl_pmpro_after_checkout($user_id)
 	if($pmpro_level->billing_limit > 0 && $order->gateway == "stripe")
 	{
 		//customer id is on order
-		$customer_id = $order->subscription_transaction_id;
-		
+		$customer_id = get_user_meta( $user_id, 'pmpro_stripe_customerid', true );
+
+		if (empty( $customer_id ) ) {
+			return ;
+		}
+
 		//get sub id via Stripe API
 		$subscription = pmprosbl_getStripeSubscription($customer_id, $order->code);
 		
