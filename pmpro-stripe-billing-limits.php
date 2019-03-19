@@ -3,7 +3,7 @@
 Plugin Name: PMPro Stripe Billing Limits
 Plugin URI: http://www.paidmembershipspro.com/add-ons/pmpro-stripe-billing-limits/
 Description: Allow billing limits with Stripe, where the Stripe subscription is cancelled, but the PMPro membership is not after X payments.
-Version: .2
+Version: .3
 Author: strangerstudios
 Author URI: http://www.strangerstudios.com
 */
@@ -18,6 +18,7 @@ Author URI: http://www.strangerstudios.com
 	* If so, cancel the subscription. BUT NOT the membership.
 	
 	* Going to leave the built-in PMPro warnings for now.
+  * 3/4/19 - updated to use new Stripe API methods
 */
 //save some user meta after checkout to track billing limit
 function pmprosbl_pmpro_after_checkout($user_id)
@@ -32,16 +33,17 @@ function pmprosbl_pmpro_after_checkout($user_id)
 	//billing limit? gateway stripe?
 	if($pmpro_level->billing_limit > 0 && $order->gateway == "stripe")
 	{
-		//customer id is on order
-		$customer_id = $order->subscription_transaction_id;
+	
+	  //subscription id is on the order
+		$subscription_id = $order->subscription_transaction_id;
 		
-		//get sub id via Stripe API
-		$subscription = pmprosbl_getStripeSubscription($customer_id, $order->code);
+		//customer id is in user meta
+		$customer_id = get_user_meta($user_id, "pmpro_stripe_customerid", true);
+			
 		
-		//no sub? return
-		if(!empty($subscription))
+		//no sub ID or customer ID? return
+		if(!empty($subscription_id) && !empty($customer_id))
 		{		
-			$subscription_id = $subscription->id;
 		
 			//build array to save
 			$pmpro_stripe_billing_limit = array(
@@ -64,7 +66,6 @@ function pmprosbl_pmpro_after_checkout($user_id)
 	delete_user_meta($user_id, "pmpro_stripe_billing_limit");
 }
 add_action('pmpro_after_checkout', 'pmprosbl_pmpro_after_checkout');
-
 //check billing limit with each new order
 function pmprosbl_pmpro_added_order($order)
 {
@@ -76,30 +77,31 @@ function pmprosbl_pmpro_added_order($order)
 		
 		if(!empty($pmpro_stripe_billing_limit))
 		{
+			//update the # of payments
+			$pmpro_stripe_billing_limit['payments']++;
+			
 			//hit limit?
 			if(empty($pmpro_stripe_billing_limit['cancelled']) && $pmpro_stripe_billing_limit['payments'] >= $pmpro_stripe_billing_limit['billing_limit'])
 			{
 				//cancel the subscription
-				$customer = Stripe_Customer::retrieve($pmpro_stripe_billing_limit['customer_id']);
-				$subscription = $customer->subscriptions->retrieve($pmpro_stripe_billing_limit['subscription_id']);
-				$subscription->cancel();
-				
+				try
+				{
+					$customer = Stripe\Customer::retrieve($pmpro_stripe_billing_limit['customer_id']);
+					$subscription = $customer->subscriptions->retrieve($pmpro_stripe_billing_limit['subscription_id']);
+					$subscription->cancel();
+				}
+				catch (Exception $e)
+				{
+					// customer or subscription already deleted on stripe's end, we don't need to do anything here
+				}
 				//make sure we don't try to cancel again
-				$pmpro_stripe_billing_limit['payments']++;
 				$pmpro_stripe_billing_limit['cancelled'] = true;
-				update_user_meta($order->user_id, "pmpro_stripe_billing_limit", $pmpro_stripe_billing_limit);
 			}
-			else
-			{
-				//update the # of payments
-				$pmpro_stripe_billing_limit['payments']++;
-				update_user_meta($order->user_id, "pmpro_stripe_billing_limit", $pmpro_stripe_billing_limit);
-			}
+			update_user_meta($order->user_id, "pmpro_stripe_billing_limit", $pmpro_stripe_billing_limit);
 		}
 	}
 }
 add_action('pmpro_added_order', 'pmprosbl_pmpro_added_order');
-
 //don't do anything when a stripe subscription is deleted if the user had a billing limit
 function pmprosbl_pmpro_stripe_subscription_deleted($user_id)
 {
@@ -114,44 +116,3 @@ function pmprosbl_pmpro_stripe_subscription_deleted($user_id)
 	}
 }
 add_action('pmpro_stripe_subscription_deleted', 'pmprosbl_pmpro_stripe_subscription_deleted', 1);
-
-/*
-	Get a Stripe Subscription for customer with id = customer_id and plan = plan_id.
-	If no plan_id is given, the first subscription will be returned.
-*/
-function pmprosbl_getStripeSubscription($customer_id, $plan_id = false)
-{
-	//make sure Stripe is loaded
-	if(!class_exists("Stripe"))
-		require_once(PMPRODIR . "/includes/lib/Stripe/Stripe.php");
-		
-	//find the customer
-	$stripe = new PMProGateway_stripe("stripe");
-	
-	$customer = Stripe_Customer::retrieve($customer_id);
-				
-	if(!empty($customer))
-	{
-		//find subscription with this order code
-		$subscriptions = $customer->subscriptions->all();												
-							
-		if(!empty($subscriptions))
-		{					
-			//no plan given? return the first
-			if(empty($plan_id))
-				return $subscriptions->data[0];
-			
-			//find sub with the same plan id
-			foreach($subscriptions->data as $sub)
-			{						
-				if($sub->plan->id == $plan_id)
-				{
-					//found it
-					return $sub;
-				}
-			}
-		}
-	}
-	
-	return false;
-}
