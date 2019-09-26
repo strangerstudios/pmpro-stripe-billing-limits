@@ -1,11 +1,11 @@
 <?php
 /*
-Plugin Name: PMPro Stripe Billing Limits
-Plugin URI: http://www.paidmembershipspro.com/add-ons/pmpro-stripe-billing-limits/
-Description: Allow billing limits with Stripe, where the Stripe subscription is cancelled, but the PMPro membership is not after X payments.
+Plugin Name: Paid Memberships Pro - Stripe Billing Limits
+Plugin URI: https://www.paidmembershipspro.com/add-ons/pmpro-stripe-billing-limits/
+Description: Allow Billing Limits with Stripe as your primary gateway.
 Version: .3
-Author: strangerstudios
-Author URI: http://www.strangerstudios.com
+Author: Paid Memberships Pro
+Author URI: https://www.paidmembershipspro.com
 */
 /*
 	The Plan
@@ -116,3 +116,21 @@ function pmprosbl_pmpro_stripe_subscription_deleted($user_id)
 	}
 }
 add_action('pmpro_stripe_subscription_deleted', 'pmprosbl_pmpro_stripe_subscription_deleted', 1);
+
+/**
+  * Function to add links to the plugin row meta
+  *
+  * @param array  $links Array of links to be shown in plugin meta.
+  * @param string $file Filename of the plugin meta is being shown for.
+  */
+ function pmprosbl_plugin_row_meta( $links, $file ) {
+ 	if ( strpos( $file, 'pmpro-stripe-billing-limits.php' ) !== false ) {
+ 		$new_links = array(
+ 			'<a href="' . esc_url( 'https://www.paidmembershipspro.com/add-ons/pmpro-stripe-billing-limits/' ) . '" title="' . esc_attr( __( 'View Documentation', 'pmpro-stripe-billing-limits' ) ) . '">' . __( 'Docs', 'pmpro-stripe-billing-limits' ) . '</a>',
+ 			'<a href="' . esc_url( 'https://www.paidmembershipspro.com/support/' ) . '" title="' . esc_attr( __( 'Visit Customer Support Forum', 'pmpro-stripe-billing-limits' ) ) . '">' . __( 'Support', 'pmpro-stripe-billing-limits' ) . '</a>',
+ 		);
+ 		$links = array_merge( $links, $new_links );
+ 	}
+ 	return $links;
+ }
+ add_filter( 'plugin_row_meta', 'pmprosbl_plugin_row_meta', 10, 2 );
