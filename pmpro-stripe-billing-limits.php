@@ -117,7 +117,6 @@ function pmprosbl_pmpro_stripe_subscription_deleted($user_id)
 }
 add_action('pmpro_stripe_subscription_deleted', 'pmprosbl_pmpro_stripe_subscription_deleted', 1);
 
-<<<<<<< HEAD
 /*
 	Get a Stripe Subscription for customer with id = customer_id and plan = plan_id.
 	If no plan_id is given, the first subscription will be returned.
