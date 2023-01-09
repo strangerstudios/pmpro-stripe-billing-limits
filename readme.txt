@@ -1,9 +1,9 @@
 === Paid Memberships Pro - Stripe Billing Limits Add On ===
 Contributors: strangerstudios
 Tags: paid memberships pro, stripe, billing
-Requires at least: 4.0
-Tested up to: 5.2.3
-Stable tag: .3
+Requires at least: 5.2
+Tested up to: 6.1.1
+Stable tag: 1.0
 
 Allow Billing Limits with Stripe as your primary gateway.
 
@@ -28,6 +28,11 @@ Please post it in the GitHub issue tracker here: https://github.com/strangerstud
 Please visit our premium support site at https://www.paidmembershipspro.com for more documentation and our support forums.
 
 == Changelog ==
+= 1.0 - 2023-01-09 =
+* BUG FIX/ENHANCEMENT: No longer relying on usermeta to track billing limit data.
+* BUG FIX/ENHANCEMENT: Improved compatibility with PMPro Multiple Memberships Per User.
+* REFACTOR: Simplified logic throughout the plugin to increase stability. Updating to 1.0 to reflect this.
+
 = .3 =
 * ENHANCEMENT: Updated Stripe Namespace.
 * BUG FIX/ENHANCEMENT: Added try-catch around API requests to prevent Uncaught Stripe Error.

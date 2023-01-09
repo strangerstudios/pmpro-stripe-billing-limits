@@ -3,7 +3,7 @@
 Plugin Name: Paid Memberships Pro - Stripe Billing Limits
 Plugin URI: https://www.paidmembershipspro.com/add-ons/pmpro-stripe-billing-limits/
 Description: Allow Billing Limits with Stripe as your primary gateway.
-Version: .3
+Version: 1.0
 Author: Paid Memberships Pro
 Author URI: https://www.paidmembershipspro.com
 */
